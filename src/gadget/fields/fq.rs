@@ -23,13 +23,13 @@ impl<E: Engine> Fq<E> {
 
     #[allow(dead_code)]
     pub fn new(
-        c0_lc:  LinearCombination<E>,
         c0:     E::Fr,
+        c0_lc:  &LinearCombination<E>,
     ) -> Self {
 
         Self{
             c0: c0,
-            c0_lc: c0_lc,
+            c0_lc: LinearCombination::<E>::zero() + c0_lc,
         }
     }
 

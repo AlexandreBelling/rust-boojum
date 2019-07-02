@@ -156,7 +156,7 @@ impl<E: Engine> Fq2<E> {
     }
 
     #[allow(dead_code)]
-    pub fn sqr<CS, P>(
+    pub fn square<CS, P>(
         &self,
         cs: &mut CS,
     ) -> Self 
@@ -262,6 +262,66 @@ impl<E: Engine> Fq2<E> {
         );
 
         Some(output_value)
+    }
+
+    #[allow(dead_code)]
+    pub fn enforce_mul<CS, P>(
+        &self,
+        cs: &mut CS,
+        other: &Self,
+        result: &Self
+    )
+        where CS: ConstraintSystem<E>, P: Fp2Parameters<E>
+    {
+        // Karatsuba multiplication for Fp2:
+        //     v0 = A.c0 * B.c0
+        //     v1 = A.c1 * B.c1
+        //     result.c0 = v0 + non_residue * v1
+        //     result.c1 = (A.c0 + A.c1) * (B.c0 + B.c1) - v0 - v1
+        // Enforced with 3 constraints:
+        //     A.c1 * B.c1 = v1
+        //     A.c0 * B.c0 = result.c0 - non_residue * v1
+        //     (A.c0+A.c1)*(B.c0+B.c1) = result.c1 + result.c0 + (1 - non_residue) * v1
+        // Reference:
+        // "Multiplication and Squaring on Pairing-Friendly Fields"
+        // Devegili, OhEigeartaigh, Scott, Dahab
+        let mul_cs = &mut cs.namespace(|| "mul");
+
+        // Compute v1
+        let v1 = self.c1.mul(&mut mul_cs.namespace(|| "v1"), &other.c1);
+
+        // Perform second check
+        let non_residue_times_v1 = v1.mul_by_constant(P::NONRESIDUE);
+        let rhs = result.c0.sub(&non_residue_times_v1);
+        self.c0.enforce_mul(&mut mul_cs.namespace(|| "second check"), &other.c0, &rhs);
+
+        // Last check
+        let a0_plus_a1 = self.c0.add(&self.c1);
+        let b0_plus_b1 = other.c0.add(&other.c1);
+        let one_minus_non_residue_v1 = v1.sub(&non_residue_times_v1);
+
+        let result_c1_plus_result_c0_plus_one_minus_non_residue_v1 = result
+            .c1
+            .add(&result.c0)
+            .add(&one_minus_non_residue_v1);
+
+        a0_plus_a1.enforce_mul(
+            &mut mul_cs.namespace(|| "third check"),
+            &b0_plus_b1,
+            &result_c1_plus_result_c0_plus_one_minus_non_residue_v1,
+        );
+    }
+
+    #[allow(dead_code)]
+    pub fn frobenius_map_in_place<P>(&self, power: usize) -> Self
+        where P: Fp2Parameters<E>
+    {
+        let mut result = Self::new(
+            Fq::<E>::new(self.c0.c0, &self.c0.c0_lc), 
+            Fq::<E>::new(self.c1.c0, &self.c1.c0_lc), 
+        );
+        result.c1 = result.c1.mul_by_constant(P::FROBENIUS_COEFF_E[power % 2]);
+        result
     }
 
 }
