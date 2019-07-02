@@ -15,40 +15,40 @@ use bellman_ce::pairing::ff::{
 
 #[allow(dead_code)]
 pub struct Fq<E: Engine> {
-    pub c0:     E::Fr,
-    pub c0_lc:  LinearCombination<E>
+    pub value:     E::Fr,
+    pub lc:  LinearCombination<E>
 }
 
 impl<E: Engine> Fq<E> {
 
     #[allow(dead_code)]
     pub fn new(
-        c0:     E::Fr,
-        c0_lc:  &LinearCombination<E>,
+        value:     E::Fr,
+        lc:  &LinearCombination<E>,
     ) -> Self {
 
         Self{
-            c0: c0,
-            c0_lc: LinearCombination::<E>::zero() + c0_lc,
+            value: value,
+            lc: LinearCombination::<E>::zero() + lc,
         }
     }
 
     #[allow(dead_code)]
     pub fn alloc<CS>(
         cs:     &mut CS,
-        c0:     E::Fr,
+        value:     E::Fr,
     ) -> Self 
         where CS: ConstraintSystem<E>
     {
 
         let var = cs.alloc(
             || "Fields allocation", 
-            || Ok(c0)
+            || Ok(value)
         ).expect("Could not allocate variable");
 
         Self{
-            c0: c0,
-            c0_lc: LinearCombination::<E>::zero() + var,
+            value: value,
+            lc: LinearCombination::<E>::zero() + var,
         }
     }
 
@@ -57,8 +57,8 @@ impl<E: Engine> Fq<E> {
         where CS: ConstraintSystem<E>
     {
         Self {
-            c0: E::Fr::zero(),
-            c0_lc: LinearCombination::<E>::zero()
+            value: E::Fr::zero(),
+            lc: LinearCombination::<E>::zero()
         }
     }
 
@@ -67,26 +67,26 @@ impl<E: Engine> Fq<E> {
         where CS: ConstraintSystem<E>
     {
         Self {
-            c0: E::Fr::zero(),
-            c0_lc: LinearCombination::<E>::zero() + CS::one()
+            value: E::Fr::zero(),
+            lc: LinearCombination::<E>::zero() + CS::one()
         }
     }
 
     #[allow(dead_code)]
     pub fn alloc_input<CS>(
         cs:     &mut CS,
-        c0:     E::Fr,
+        value:     E::Fr,
     ) -> Self
         where CS: ConstraintSystem<E>
     {
         let var = cs.alloc_input(
             || "Fields allocation",
-            || Ok(c0),
+            || Ok(value),
         ).expect("Could not allocate variable");
 
         Self{
-            c0: c0,
-            c0_lc: LinearCombination::<E>::zero() + var,
+            value: value,
+            lc: LinearCombination::<E>::zero() + var,
         }
     }
 
@@ -97,12 +97,12 @@ impl<E: Engine> Fq<E> {
     ) -> Self {
 
         Self{
-            c0: {
-                let mut e = self.c0;
-                e.add_assign(&other.c0);
+            value: {
+                let mut e = self.value;
+                e.add_assign(&other.value);
                 e
             },
-            c0_lc: LinearCombination::<E>::zero() + &self.c0_lc + &self.c0_lc
+            lc: LinearCombination::<E>::zero() + &self.lc + &self.lc
         }
     }
 
@@ -113,12 +113,12 @@ impl<E: Engine> Fq<E> {
     ) -> Self {
 
         Self{
-            c0: {
-                let mut e = self.c0;
-                e.sub_assign(&other.c0);
+            value: {
+                let mut e = self.value;
+                e.sub_assign(&other.value);
                 e
             },
-            c0_lc: LinearCombination::<E>::zero() + &self.c0_lc - &self.c0_lc
+            lc: LinearCombination::<E>::zero() + &self.lc - &self.lc
         }
     }
 
@@ -128,12 +128,12 @@ impl<E: Engine> Fq<E> {
     ) -> Self {
 
         Self{
-            c0: {
+            value: {
                 let mut e = E::Fr::zero();
-                e.sub_assign(&self.c0);
+                e.sub_assign(&self.value);
                 e
             },
-            c0_lc: LinearCombination::<E>::zero() - &self.c0_lc
+            lc: LinearCombination::<E>::zero() - &self.lc
         }
     }
 
@@ -144,12 +144,12 @@ impl<E: Engine> Fq<E> {
     ) -> Self {
         
         Fq{
-            c0: {
-                let mut output = self.c0;
+            value: {
+                let mut output = self.value;
                 output.mul_assign(&coeff);
                 output
             },
-            c0_lc: LinearCombination::<E>::zero() + (coeff, &self.c0_lc)
+            lc: LinearCombination::<E>::zero() + (coeff, &self.lc)
         }
     }
 
@@ -173,8 +173,8 @@ impl<E: Engine> Fq<E> {
         let mut mul_cs = cs.namespace(|| "Field multiplication");
 
         let output_value = {
-            let mut e = self.c0;
-            e.mul_assign(&other.c0);
+            let mut e = self.value;
+            e.mul_assign(&other.value);
             e
         };
 
@@ -186,15 +186,15 @@ impl<E: Engine> Fq<E> {
         let output_lc = LinearCombination::<E>::zero() + output_var;
 
         let output = Self{
-            c0: output_value,
-            c0_lc: output_lc
+            value: output_value,
+            lc: output_lc
         };
 
         mul_cs.enforce(
             || "a * b == c",
-            |lc| lc + &self.c0_lc, 
-            |lc| lc + &other.c0_lc, 
-            |lc| lc + &output.c0_lc,
+            |lc| lc + &self.lc, 
+            |lc| lc + &other.lc, 
+            |lc| lc + &output.lc,
         );
 
         output
@@ -209,7 +209,7 @@ impl<E: Engine> Fq<E> {
     {
         let mut inv_cs = cs.namespace(|| "Field inversion");
 
-        let inv_opt = self.c0.inverse();
+        let inv_opt = self.value.inverse();
         if inv_opt.is_none() {
             return None;
         }
@@ -223,14 +223,14 @@ impl<E: Engine> Fq<E> {
         let inverse_lc = LinearCombination::<E>::zero() + inverse_var;
         
         let inverse = Fq{
-            c0:     inv_value,
-            c0_lc:  inverse_lc,
+            value:     inv_value,
+            lc:  inverse_lc,
         };
 
         inv_cs.enforce(
             || "A * 1/A == 1",
-            |lc| lc + &self.c0_lc,
-            |lc| lc + &inverse.c0_lc,
+            |lc| lc + &self.lc,
+            |lc| lc + &inverse.lc,
             |lc| lc + CS::one()
         );
 
@@ -245,7 +245,7 @@ impl<E: Engine> Fq<E> {
         where CS: ConstraintSystem<E>
     { 
         let mut sqr_cs = cs.namespace(|| "Field squaring");
-        let mut sqr_value = self.c0;
+        let mut sqr_value = self.value;
         sqr_value.square();
 
         let sqr_var = sqr_cs.alloc_input(
@@ -256,15 +256,15 @@ impl<E: Engine> Fq<E> {
         let sqr_lc = LinearCombination::<E>::zero() + sqr_var;
         
         let square = Fq{
-            c0:     sqr_value,
-            c0_lc:  sqr_lc,
+            value:     sqr_value,
+            lc:  sqr_lc,
         };
 
         sqr_cs.enforce(
             || "A * 1/A == 1",
-            |lc| lc + &self.c0_lc,
-            |lc| lc + &self.c0_lc,
-            |lc| lc + &square.c0_lc,
+            |lc| lc + &self.lc,
+            |lc| lc + &self.lc,
+            |lc| lc + &square.lc,
         );
 
         square
@@ -280,9 +280,9 @@ impl<E: Engine> Fq<E> {
         where CS: ConstraintSystem<E>
     {
         cs.enforce(|| "Multiplication constraint", 
-            |lc| lc + &self.c0_lc, 
-            |lc| lc + &other.c0_lc, 
-            |lc| lc + &result.c0_lc
+            |lc| lc + &self.lc, 
+            |lc| lc + &other.lc, 
+            |lc| lc + &result.lc
         );
     }
 
@@ -295,9 +295,9 @@ impl<E: Engine> Fq<E> {
         where CS: ConstraintSystem<E>
     {
         cs.enforce(|| "Multiplication constraint", 
-            |lc| lc + &self.c0_lc, 
-            |lc| lc + &self.c0_lc, 
-            |lc| lc + &result.c0_lc
+            |lc| lc + &self.lc, 
+            |lc| lc + &self.lc, 
+            |lc| lc + &result.lc
         );
     }
 

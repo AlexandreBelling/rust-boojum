@@ -231,7 +231,7 @@ impl<E: Engine> Fq2<E> {
         // "Multiplication and Squaring on Pairing-Friendly Fields"
         // Devegili, OhEigeartaigh, Scott, Dahab
 
-        let output_fp2 = Fp2::new(self.c0.c0, self.c1.c0).inverse::<P>();
+        let output_fp2 = Fp2::new(self.c0.value, self.c1.value).inverse::<P>();
         if output_fp2.is_none(){
             return None;
         }
@@ -317,8 +317,8 @@ impl<E: Engine> Fq2<E> {
         where P: Fp2Parameters<E>
     {
         let mut result = Self::new(
-            Fq::<E>::new(self.c0.c0, &self.c0.c0_lc), 
-            Fq::<E>::new(self.c1.c0, &self.c1.c0_lc), 
+            Fq::<E>::new(self.c0.value, &self.c0.lc), 
+            Fq::<E>::new(self.c1.value, &self.c1.lc), 
         );
         result.c1 = result.c1.mul_by_constant(P::FROBENIUS_COEFF_E[power % 2]);
         result
