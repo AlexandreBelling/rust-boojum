@@ -56,7 +56,7 @@ impl<E: Engine> Fq2<E> {
     #[allow(dead_code)]
     pub fn value(&self) -> Fp2<E> 
     {
-        Fp2::<E>::newFp2::<E>::new(self.c0.value, self.c1.value)
+        Fp2::<E>::new(self.c0.value, self.c1.value)
     }
 
     #[allow(dead_code)]
