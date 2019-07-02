@@ -370,8 +370,6 @@ mod tests {
         // Prepare the verification key (for proof verification)
         let pvk = prepare_verifying_key(&params.vk);
 
-        assert_eq!(params.vk.ic.len(), 3);
-
         let a = Fr::rand(rng);
         let b = Fr::rand(rng);
 
