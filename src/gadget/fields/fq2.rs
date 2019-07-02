@@ -49,7 +49,7 @@ impl<E: Engine> Fq2<E> {
     {
         Self{
             c0: Fq::<E>::alloc(cs, value.c0),
-            c1: Fq::<E>::alloc(cs, value.c0),
+            c1: Fq::<E>::alloc(cs, value.c1),
         }
     }
 
