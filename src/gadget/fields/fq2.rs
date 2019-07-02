@@ -2,26 +2,54 @@ use bellman_ce::pairing::{
     Engine
 };
 
-use bellman_ce::{
-    ConstraintSystem, 
-};
-
-use bellman_ce::pairing::ff::{
-    Field,
-};
-
-use super::fq::{
-    Fq
-};
-
+use bellman_ce::{ConstraintSystem};
+use bellman_ce::pairing::ff::{Field};
+use super::fq::{Fq};
 use crate::fields::{ Fp2Parameters, Fp2 };
+use std::marker::PhantomData;
 
-pub struct Fq2<E: Engine> {
-    pub c0: Fq<E>,
-    pub c1: Fq<E>
+pub struct Fq2<E: Engine, P: Fp2Parameters<E>> {
+    pub c0:         Fq<E>,
+    pub c1:         Fq<E>,
+    _phantom:       PhantomData<P>
 }
 
-impl<E: Engine> Fq2<E> {
+// trait Fp2Field<E: Engine, P: Fp2Parameters<E>> : Sized {
+
+//     type P: Fp2Parameters<E>;
+
+//     fn mul<CS>(
+//         &self,
+//         cs: &mut CS,
+//         other: &Self,
+//     ) -> Self 
+//         where CS: ConstraintSystem<E>;
+
+//     fn square<CS>(
+//         &self,
+//         cs: &mut CS,
+//     ) -> Self 
+//         where CS: ConstraintSystem<E>;
+
+//     fn inverse<CS>(
+//         &self,
+//         cs: &mut CS,
+//     ) -> Option<Self> 
+//         where CS: ConstraintSystem<E>;
+
+//     fn enforce_mul<CS>(
+//         &self,
+//         cs: &mut CS,
+//         other: &Self,
+//         result: &Self
+//     )
+//         where CS: ConstraintSystem<E>;
+
+//     fn frobenius_map(&self, power: usize) -> Self;
+
+// }
+
+impl<E: Engine, P: Fp2Parameters<E>> Fq2<E, P> {
 
     #[allow(dead_code)]
     pub fn new(
@@ -29,9 +57,10 @@ impl<E: Engine> Fq2<E> {
         c1: Fq<E>,
     ) -> Self {
 
-        Self{
-            c0: c0,
-            c1: c1,
+        Self {
+            c0:         c0,
+            c1:         c1,
+            _phantom:   PhantomData,
         }
     }
 
@@ -42,9 +71,24 @@ impl<E: Engine> Fq2<E> {
     ) -> Self 
         where CS: ConstraintSystem<E>
     {
-        Self{
+        Self {
             c0: Fq::<E>::alloc(cs, value.c0),
             c1: Fq::<E>::alloc(cs, value.c1),
+            _phantom:   PhantomData,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn from_fp2_alloc_input<CS>(
+        cs: &mut CS,
+        value: &Fp2<E>,
+    ) -> Self 
+        where CS: ConstraintSystem<E>
+    {
+        Self {
+            c0: Fq::<E>::alloc_input(cs, value.c0),
+            c1: Fq::<E>::alloc_input(cs, value.c1),
+            _phantom:   PhantomData,
         }
     }
 
@@ -61,6 +105,7 @@ impl<E: Engine> Fq2<E> {
         Self {
             c0: Fq::<E>::one::<CS>(),
             c1: Fq::<E>::zero::<CS>(),
+            _phantom:   PhantomData,
         }
     }
 
@@ -68,7 +113,8 @@ impl<E: Engine> Fq2<E> {
     pub fn negate(&self) -> Self {
         Self{
             c0: self.c0.negate(),
-            c1: self.c1.negate()
+            c1: self.c1.negate(),
+            _phantom:   PhantomData,
         }
     }
 
@@ -77,6 +123,7 @@ impl<E: Engine> Fq2<E> {
         Self{
             c0: self.c0.mul_by_constant(coeff),
             c1: self.c1.mul_by_constant(coeff),
+            _phantom:   PhantomData,
         }
     }
 
@@ -88,7 +135,8 @@ impl<E: Engine> Fq2<E> {
 
         Self{
             c0: self.c0.add(&other.c0),
-            c1: self.c1.add(&other.c1)
+            c1: self.c1.add(&other.c1),
+            _phantom:   PhantomData,
         }
     }
 
@@ -100,17 +148,24 @@ impl<E: Engine> Fq2<E> {
 
         Self{
             c0: self.c0.sub(&other.c0),
-            c1: self.c1.sub(&other.c1)
+            c1: self.c1.sub(&other.c1),
+            _phantom:   PhantomData,
         }
     }
 
+// }
+
+// impl<E: Engine, P: Fp2Parameters<E>> Fp2Field<E, P> for Fq2<E>{
+
+//     type P = P;
+
     #[allow(dead_code)]
-    pub fn mul<CS, P>(
+    fn mul<CS>(
         &self,
         cs: &mut CS,
         other: &Self,
     ) -> Self 
-        where CS: ConstraintSystem<E>, P: Fp2Parameters<E>
+        where CS: ConstraintSystem<E>
     {
         let mut mul_cs = cs.namespace(|| "Fp2 multiplication");
 
@@ -152,16 +207,17 @@ impl<E: Engine> Fq2<E> {
 
         Self{
             c0: c0,
-            c1: c1
+            c1: c1,
+            _phantom:   PhantomData,
         }
     }
 
     #[allow(dead_code)]
-    pub fn square<CS, P>(
+    fn square<CS>(
         &self,
         cs: &mut CS,
     ) -> Self 
-        where CS: ConstraintSystem<E>, P: Fp2Parameters<E>
+        where CS: ConstraintSystem<E>
     {
         let mut sqr_cs = cs.namespace(|| "Fp2 squaring");
 
@@ -203,16 +259,17 @@ impl<E: Engine> Fq2<E> {
 
         Self{
             c0: c0,
-            c1: c1
+            c1: c1,
+            _phantom:   PhantomData,
         }
     }
 
     #[allow(dead_code)]
-    pub fn inverse<CS, P>(
+    fn inverse<CS>(
         &self,
         cs: &mut CS,
     ) -> Option<Self> 
-        where CS: ConstraintSystem<E>, P: Fp2Parameters<E>
+        where CS: ConstraintSystem<E>
     {
         let mut inv_cs = cs.namespace(|| "Fp2 inversion");
         // Karatsuba multiplication for Fp2 with the inverse:
@@ -266,13 +323,13 @@ impl<E: Engine> Fq2<E> {
     }
 
     #[allow(dead_code)]
-    pub fn enforce_mul<CS, P>(
+    fn enforce_mul<CS>(
         &self,
         cs: &mut CS,
         other: &Self,
         result: &Self
     )
-        where CS: ConstraintSystem<E>, P: Fp2Parameters<E>
+        where CS: ConstraintSystem<E>
     {
         // Karatsuba multiplication for Fp2:
         //     v0 = A.c0 * B.c0
@@ -314,9 +371,8 @@ impl<E: Engine> Fq2<E> {
     }
 
     #[allow(dead_code)]
-    pub fn frobenius_map_in_place<P>(&self, power: usize) -> Self
-        where P: Fp2Parameters<E>
-    {
+    fn frobenius_map(&self, power: usize) -> Self {
+
         let mut result = Self::new(
             Fq::<E>::new(self.c0.value, &self.c0.lc), 
             Fq::<E>::new(self.c1.value, &self.c1.lc), 
@@ -325,4 +381,100 @@ impl<E: Engine> Fq2<E> {
         result
     }
 
+}
+
+
+#[cfg(test)]
+mod tests {
+
+    extern crate rand;
+    extern crate bellman_ce;
+ 
+    use std::marker::PhantomData;
+    use rand::{Rand, thread_rng};
+    use super::{Fq2};
+    use crate::fields::{Fp2, Fp2Parameters};
+
+    use bellman_ce::pairing::{Engine};
+    use bellman_ce::pairing::ff::{Field};
+    use bellman_ce::pairing::bls12_381::{Bls12, Fr};
+
+    use bellman_ce::{
+        ConstraintSystem,
+        Circuit,
+        SynthesisError
+    };
+
+    // We're going to use the Groth16 proving system.
+    use bellman_ce::groth16::{ 
+        // generate_random_parameters, 
+        // prepare_verifying_key, 
+        // create_random_proof, 
+        // verify_proof
+    };
+
+    // This is a trivial circuit that verifies that a² * b / b == a²
+    pub struct TestCircuit<E: Engine, P: Fp2Parameters<E>> {
+        a_value: Fp2<E>,
+        b_value: Fp2<E>,
+        _phantom: PhantomData<P>,
+    }
+
+    impl<E: Engine, P: Fp2Parameters<E>> Circuit<E> for TestCircuit<E, P> {
+        
+        fn synthesize<CS: ConstraintSystem<E>>(
+            self,
+            cs: &mut CS
+        ) -> Result<(), SynthesisError>
+        {
+            // Creates the gadgets and allocate the inputs
+            let a = Fq2::<E, P>::from_fp2_alloc_input(&mut cs.namespace(|| "A"), &self.a_value);
+            let b = Fq2::<E, P>::from_fp2_alloc_input(&mut cs.namespace(|| "B"), &self.b_value);
+
+            // Allocate the constraints
+            let a2          = a.square(&mut cs.namespace(|| "A²"));
+            let a2_b        = a2.mul(&mut cs.namespace(|| "A² * B"), &b);
+            let b_inv       = b.inverse(&mut cs.namespace(|| "1/B"));
+
+            // Catch division error
+            if b_inv.is_none() {
+                return Err(SynthesisError::DivisionByZero);
+            }
+            let b_inv       = b_inv.expect("We already handled errors");
+            let lhs         = b_inv.mul(&mut cs.namespace(|| "A² * B / B"), &a2_b);
+
+            // Doubly enforce the egality in order to increase coverage
+            a.enforce_mul(&mut cs.namespace(|| "lhs = a²"), &a, &lhs);
+
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test() {
+        // let rng = &mut thread_rng();
+
+        // let params = {
+        //     let c = TestCircuit::<Bls12> {
+        //         a_value: Fp2::<Bls12>::one(),
+        //         b_value: Fp2::<Bls12>::one(), // b cannot be zero
+        //     };
+
+        //     generate_random_parameters(c, rng).unwrap()
+        // };
+
+        // // Prepare the verification key (for proof verification)
+        // let pvk = prepare_verifying_key(&params.vk);
+
+        // let a = Fr::rand(rng);
+        // let b = Fr::rand(rng);
+
+        // let circuit = TestCircuit::<Bls12> {
+        //     a_value: a,
+        //     b_value: b,
+        // };
+
+        // let proof = create_random_proof(circuit, &params, rng).expect("Expect the prover to work");
+        // assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
+    }
 }
