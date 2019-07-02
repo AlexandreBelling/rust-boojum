@@ -318,13 +318,14 @@ mod tests {
         verify_proof
     };
 
+    // This is a trivial circuit that verifies that a² * b / b == a²
     pub struct TestCircuit<E: Engine> {
         a_value: E::Fr,
         b_value: E::Fr,
     }
 
     impl<E: Engine> Circuit<E> for TestCircuit<E> {
-        // This is a trivial circuit that verifies that a² * b / b == a²
+        
         fn synthesize<CS: ConstraintSystem<E>>(
             self,
             cs: &mut CS
