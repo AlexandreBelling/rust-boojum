@@ -54,6 +54,12 @@ impl<E: Engine> Fq2<E> {
     }
 
     #[allow(dead_code)]
+    pub fn value(&self) -> Fp2<E> 
+    {
+        Fp2::<E>::newFp2::<E>::new(self.c0.value, self.c1.value)
+    }
+
+    #[allow(dead_code)]
     fn one<CS>() -> Self
         where CS: ConstraintSystem<E>
     {
@@ -231,7 +237,7 @@ impl<E: Engine> Fq2<E> {
         // "Multiplication and Squaring on Pairing-Friendly Fields"
         // Devegili, OhEigeartaigh, Scott, Dahab
 
-        let output_fp2 = Fp2::new(self.c0.value, self.c1.value).inverse::<P>();
+        let output_fp2 = self.value().inverse::<P>();
         if output_fp2.is_none(){
             return None;
         }
