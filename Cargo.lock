@@ -280,6 +280,7 @@ name = "rust-sonic-boojum"
 version = "0.1.0"
 dependencies = [
  "bellman_ce 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

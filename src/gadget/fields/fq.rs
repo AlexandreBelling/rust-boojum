@@ -13,7 +13,6 @@ use bellman_ce::pairing::ff::{
     Field
 };
 
-#[allow(dead_code)]
 pub struct Fq<E: Engine> {
     pub value:     E::Fr,
     pub lc:  LinearCombination<E>
@@ -21,7 +20,6 @@ pub struct Fq<E: Engine> {
 
 impl<E: Engine> Fq<E> {
 
-    #[allow(dead_code)]
     pub fn new(
         value:     E::Fr,
         lc:  &LinearCombination<E>,
@@ -33,7 +31,6 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn alloc<CS>(
         cs:     &mut CS,
         value:     E::Fr,
@@ -52,7 +49,6 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn zero<CS>() -> Self
         where CS: ConstraintSystem<E>
     {
@@ -62,7 +58,6 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn one<CS>() -> Self
         where CS: ConstraintSystem<E>
     {
@@ -80,7 +75,7 @@ impl<E: Engine> Fq<E> {
         where CS: ConstraintSystem<E>
     {
         let var = cs.alloc_input(
-            || "Fields allocation",
+            || "Fields allocatio as primary input",
             || Ok(value),
         ).expect("Could not allocate variable");
 
@@ -90,7 +85,6 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn add(
         &self,
         other:  &Self,
@@ -106,7 +100,6 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn sub(
         &self,
         other: &Self,
@@ -122,7 +115,6 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn negate(
        &self, 
     ) -> Self {
@@ -137,7 +129,6 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn mul_by_constant(
         &self,
         coeff:  E::Fr,
@@ -153,7 +144,6 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn double(
         &self,
     ) -> Self {
@@ -162,7 +152,6 @@ impl<E: Engine> Fq<E> {
         self.mul_by_constant(two)
     }
 
-    #[allow(dead_code)]
     pub fn mul<CS>(
         &self,
         cs:    &mut CS,
@@ -178,7 +167,7 @@ impl<E: Engine> Fq<E> {
             e
         };
 
-        let output_var = mul_cs.alloc_input(
+        let output_var = mul_cs.alloc(
             || "Result",
             || Ok(output_value),
         ).expect("Could not allocate variable");
@@ -215,7 +204,7 @@ impl<E: Engine> Fq<E> {
         }
         let inv_value = inv_opt.expect("We just checked that it would not fail");
 
-        let inverse_var = inv_cs.alloc_input(
+        let inverse_var = inv_cs.alloc(
             || "Result",
             || Ok(inv_value),
         ).expect("Could not allocate variable");
@@ -238,7 +227,7 @@ impl<E: Engine> Fq<E> {
     }
 
     #[allow(dead_code)]
-    pub fn sqr<CS>(
+    pub fn square<CS>(
         &self,
         cs:    &mut CS,
     ) -> Self 
@@ -248,7 +237,7 @@ impl<E: Engine> Fq<E> {
         let mut sqr_value = self.value;
         sqr_value.square();
 
-        let sqr_var = sqr_cs.alloc_input(
+        let sqr_var = sqr_cs.alloc(
             || "Result",
             || Ok(sqr_value),
         ).expect("Could not allocate variable");
@@ -299,6 +288,100 @@ impl<E: Engine> Fq<E> {
             |lc| lc + &self.lc, 
             |lc| lc + &result.lc
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    extern crate rand;
+    extern crate bellman_ce;
+
+    use rand::{Rand, thread_rng};
+    use super::Fq;
+
+    use bellman_ce::pairing::{ Engine };
+    use bellman_ce::pairing::ff::{ Field };
+    use bellman_ce::pairing::bls12_381::{ Bls12, Fr };
+
+    use bellman_ce::{
+        ConstraintSystem,
+        Circuit,
+        SynthesisError
+    };
+
+    // We're going to use the Groth16 proving system.
+    use bellman_ce::groth16::{ 
+        generate_random_parameters, 
+        prepare_verifying_key, 
+        create_random_proof, 
+        verify_proof
+    };
+
+    pub struct TestCircuit<E: Engine> {
+        a_value: E::Fr,
+        b_value: E::Fr,
+    }
+
+    impl<E: Engine> Circuit<E> for TestCircuit<E> {
+        // This is a trivial circuit that verifies that a² * b / b == a²
+        fn synthesize<CS: ConstraintSystem<E>>(
+            self,
+            cs: &mut CS
+        ) -> Result<(), SynthesisError>
+        {
+            // Creates the gadgets and allocate the inputs
+            let a = Fq::<E>::alloc_input(&mut cs.namespace(|| "A"), self.a_value);
+            let b = Fq::<E>::alloc_input(&mut cs.namespace(|| "B"), self.b_value);
+
+            // Allocate the constraints
+            let a2          = a.square(&mut cs.namespace(|| "A²"));
+            let a2_b        = a2.mul(&mut cs.namespace(|| "A² * B"), &b);
+            let b_inv       = b.inverse(&mut cs.namespace(|| "1/B"));
+
+            // Catch division error
+            if b_inv.is_none() {
+                return Err(SynthesisError::DivisionByZero);
+            }
+            let b_inv       = b_inv.expect("We already handled errors");
+            let lhs         = b_inv.mul(&mut cs.namespace(|| "A² * B / B"), &a2_b);
+
+            // Doubly enforce the egality in order to increase coverage
+            a.enforce_sqr(&mut cs.namespace(|| "lhs = a²"), &lhs);
+            a.enforce_mul(&mut cs.namespace(|| "lhs = a²"), &a, &lhs);
+
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test() {
+        let rng = &mut thread_rng();
+
+        let params = {
+            let c = TestCircuit::<Bls12> {
+                a_value: Fr::one(),
+                b_value: Fr::one(), // b cannot be zero
+            };
+
+            generate_random_parameters(c, rng).unwrap()
+        };
+
+        // Prepare the verification key (for proof verification)
+        let pvk = prepare_verifying_key(&params.vk);
+
+        assert_eq!(params.vk.ic.len(), 3);
+
+        let a = Fr::rand(rng);
+        let b = Fr::rand(rng);
+
+        let circuit = TestCircuit::<Bls12> {
+            a_value: a,
+            b_value: b,
+        };
+
+        let proof = create_random_proof(circuit, &params, rng).expect("Expect the prover to work");
+        assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
     }
 
 }

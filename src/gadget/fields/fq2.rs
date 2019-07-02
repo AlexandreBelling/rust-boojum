@@ -3,10 +3,7 @@ use bellman_ce::pairing::{
 };
 
 use bellman_ce::{
-    // SynthesisError, 
-    // Variable
     ConstraintSystem, 
-    //LinearCombination, 
 };
 
 use bellman_ce::pairing::ff::{
@@ -18,8 +15,6 @@ use super::fq::{
 };
 
 use crate::fields::{ Fp2Parameters, Fp2 };
-
-//use bellman_ce::pairing::ff::{ Field };
 
 pub struct Fq2<E: Engine> {
     pub c0: Fq<E>,
