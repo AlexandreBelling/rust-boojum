@@ -53,6 +53,26 @@ impl<E: Engine> Fq<E> {
     }
 
     #[allow(dead_code)]
+    pub fn zero<CS>() -> Self
+        where CS: ConstraintSystem<E>
+    {
+        Self {
+            c0: E::Fr::zero(),
+            c0_lc: LinearCombination::<E>::zero()
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn one<CS>() -> Self
+        where CS: ConstraintSystem<E>
+    {
+        Self {
+            c0: E::Fr::zero(),
+            c0_lc: LinearCombination::<E>::zero() + CS::one()
+        }
+    }
+
+    #[allow(dead_code)]
     pub fn alloc_input<CS>(
         cs:     &mut CS,
         c0:     E::Fr,
@@ -248,6 +268,37 @@ impl<E: Engine> Fq<E> {
         );
 
         square
+    }
+
+    #[allow(dead_code)]
+    pub fn enforce_mul<CS>(
+        &self,
+        cs:     &mut CS,
+        other:  &Self, 
+        result: &Self,
+    )
+        where CS: ConstraintSystem<E>
+    {
+        cs.enforce(|| "Multiplication constraint", 
+            |lc| lc + &self.c0_lc, 
+            |lc| lc + &other.c0_lc, 
+            |lc| lc + &result.c0_lc
+        );
+    }
+
+    #[allow(dead_code)]
+    pub fn enforce_sqr<CS>(
+        &self,
+        cs:     &mut CS,
+        result: &Self,
+    )
+        where CS: ConstraintSystem<E>
+    {
+        cs.enforce(|| "Multiplication constraint", 
+            |lc| lc + &self.c0_lc, 
+            |lc| lc + &self.c0_lc, 
+            |lc| lc + &result.c0_lc
+        );
     }
 
 }
