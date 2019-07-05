@@ -6,4 +6,5 @@ edition = "2018"
 
 [dependencies]
 bellman_ce = "0.3.0"
+eth_pairings = { path = "../eip1962" }
 rand = "0.4.0"

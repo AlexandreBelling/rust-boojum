@@ -8,7 +8,7 @@ use super::fq::{Fq};
 use crate::fields::{ Fp2Parameters, Fp2 };
 use std::marker::PhantomData;
 
-pub struct Fq2<E: Engine, P: Fp2Parameters<E>> {
+pub struct Fq2<E: Engine, P: Fp2Parameters<Fp = E::Fr>> {
     pub c0:         Fq<E>,
     pub c1:         Fq<E>,
     _phantom:       PhantomData<P>
@@ -49,7 +49,7 @@ pub struct Fq2<E: Engine, P: Fp2Parameters<E>> {
 
 // }
 
-impl<E: Engine, P: Fp2Parameters<E>> Fq2<E, P> {
+impl<E: Engine, P: Fp2Parameters<Fp = E::Fr>> Fq2<E, P> {
 
     #[allow(dead_code)]
     pub fn new(
@@ -67,7 +67,7 @@ impl<E: Engine, P: Fp2Parameters<E>> Fq2<E, P> {
     #[allow(dead_code)]
     pub fn from_fp2_alloc<CS>(
         cs: &mut CS,
-        value: &Fp2<E>,
+        value: &Fp2<P>,
     ) -> Self 
         where CS: ConstraintSystem<E>
     {
@@ -81,7 +81,7 @@ impl<E: Engine, P: Fp2Parameters<E>> Fq2<E, P> {
     #[allow(dead_code)]
     pub fn from_fp2_alloc_input<CS>(
         cs: &mut CS,
-        value: &Fp2<E>,
+        value: &Fp2<P>,
     ) -> Self 
         where CS: ConstraintSystem<E>
     {
@@ -93,9 +93,9 @@ impl<E: Engine, P: Fp2Parameters<E>> Fq2<E, P> {
     }
 
     #[allow(dead_code)]
-    pub fn value(&self) -> Fp2<E> 
+    pub fn value(&self) -> Fp2<P> 
     {
-        Fp2::<E>::new(self.c0.value, self.c1.value)
+        Fp2::<P>::new(self.c0.value, self.c1.value)
     }
 
     #[allow(dead_code)]
@@ -289,7 +289,7 @@ impl<E: Engine, P: Fp2Parameters<E>> Fq2<E, P> {
         // "Multiplication and Squaring on Pairing-Friendly Fields"
         // Devegili, OhEigeartaigh, Scott, Dahab
 
-        let output_fp2 = self.value().inverse::<P>();
+        let output_fp2 = self.value().inverse();
         if output_fp2.is_none(){
             return None;
         }
@@ -414,13 +414,14 @@ mod tests {
     };
 
     // This is a trivial circuit that verifies that a² * b / b == a²
-    pub struct TestCircuit<E: Engine, P: Fp2Parameters<E>> {
-        a_value: Fp2<E>,
-        b_value: Fp2<E>,
-        _phantom: PhantomData<P>,
+    #[allow(dead_code)]
+    pub struct TestCircuit<E: Engine, P: Fp2Parameters<Fp = E::Fr>> {
+        a_value: Fp2<P>,
+        b_value: Fp2<P>,
+        _phantom: PhantomData<E>,
     }
 
-    impl<E: Engine, P: Fp2Parameters<E>> Circuit<E> for TestCircuit<E, P> {
+    impl<E: Engine, P: Fp2Parameters<Fp = E::Fr>> Circuit<E> for TestCircuit<E, P> {
         
         fn synthesize<CS: ConstraintSystem<E>>(
             self,

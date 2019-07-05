@@ -1,0 +1,3 @@
+[submodule "eip1962"]
+	path = eip1962
+	url = https://github.com/AlexandreBelling/eip1962
