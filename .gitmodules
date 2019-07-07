@@ -1,3 +1,6 @@
-[submodule "eip1962"]
-	path = eip1962
-	url = https://github.com/AlexandreBelling/eip1962
+[submodule "pairing"]
+	path = pairing
+	url = git@github.com:AlexandreBelling/pairing.git
+[submodule "bellman"]
+	path = bellman
+	url = https://github.com/matter-labs/bellman.git
