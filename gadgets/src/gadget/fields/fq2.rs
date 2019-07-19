@@ -397,7 +397,7 @@ mod tests {
 
     use bellman_ce::pairing::{Engine};
     use bellman_ce::pairing::ff::{Field};
-    use bellman_ce::pairing::bls12_381::{Bls12, Fr};
+    use bellman_ce::pairing::mnt4_753::{Mnt4, Fr};
 
     use bellman_ce::{
         ConstraintSystem,
@@ -406,12 +406,12 @@ mod tests {
     };
 
     // We're going to use the Groth16 proving system.
-    use bellman_ce::groth16::{ 
-        // generate_random_parameters, 
-        // prepare_verifying_key, 
-        // create_random_proof, 
-        // verify_proof
-    };
+    // use bellman_ce::groth16::{ 
+    //     generate_random_parameters, 
+    //     prepare_verifying_key, 
+    //     create_random_proof, 
+    //     verify_proof
+    // };
 
     // This is a trivial circuit that verifies that a² * b / b == a²
     #[allow(dead_code)]
@@ -451,31 +451,31 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test() {
-        // let rng = &mut thread_rng();
+//     #[test]
+//     fn test() {
+//         let rng = &mut thread_rng();
 
-        // let params = {
-        //     let c = TestCircuit::<Bls12> {
-        //         a_value: Fp2::<Bls12>::one(),
-        //         b_value: Fp2::<Bls12>::one(), // b cannot be zero
-        //     };
+//         let params = {
+//             let c = TestCircuit::<Bls12> {
+//                 a_value: Fp2::<Bls12>::one(),
+//                 b_value: Fp2::<Bls12>::one(), // b cannot be zero
+//             };
 
-        //     generate_random_parameters(c, rng).unwrap()
-        // };
+//             generate_random_parameters(c, rng).unwrap()
+//         };
 
-        // // Prepare the verification key (for proof verification)
-        // let pvk = prepare_verifying_key(&params.vk);
+//         // Prepare the verification key (for proof verification)
+//         let pvk = prepare_verifying_key(&params.vk);
 
-        // let a = Fr::rand(rng);
-        // let b = Fr::rand(rng);
+//         let a = Fr::rand(rng);
+//         let b = Fr::rand(rng);
 
-        // let circuit = TestCircuit::<Bls12> {
-        //     a_value: a,
-        //     b_value: b,
-        // };
+//         let circuit = TestCircuit::<Bls12> {
+//             a_value: a,
+//             b_value: b,
+//         };
 
-        // let proof = create_random_proof(circuit, &params, rng).expect("Expect the prover to work");
-        // assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
-    }
+//         let proof = create_random_proof(circuit, &params, rng).expect("Expect the prover to work");
+//         assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
+//     }
 }
