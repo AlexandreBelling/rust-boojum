@@ -383,33 +383,33 @@ mod tests {
         assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
     }
 
-        #[test]
-    fn test_mnt6() {
-        use bellman_ce::pairing::mnt4_753::{ Mnt6, Fr };
-        let rng = &mut thread_rng();
+    // #[test]
+    // fn test_mnt6() {
+    //     use bellman_ce::pairing::mnt6_753::{ Mnt6, Fr };
+    //     let rng = &mut thread_rng();
 
-        let params = {
-            let c = TestCircuit::<Mnt6> {
-                a_value: Fr::one(),
-                b_value: Fr::one(), // b cannot be zero
-            };
+    //     let params = {
+    //         let c = TestCircuit::<Mnt6> {
+    //             a_value: Fr::one(),
+    //             b_value: Fr::one(), // b cannot be zero
+    //         };
 
-            generate_random_parameters(c, rng).unwrap()
-        };
+    //         generate_random_parameters(c, rng).unwrap()
+    //     };
 
-        // Prepare the verification key (for proof verification)
-        let pvk = prepare_verifying_key(&params.vk);
+    //     // Prepare the verification key (for proof verification)
+    //     let pvk = prepare_verifying_key(&params.vk);
 
-        let a = Fr::rand(rng);
-        let b = Fr::rand(rng);
+    //     let a = Fr::rand(rng);
+    //     let b = Fr::rand(rng);
 
-        let circuit = TestCircuit::<Mnt6> {
-            a_value: a,
-            b_value: b,
-        };
+    //     let circuit = TestCircuit::<Mnt6> {
+    //         a_value: a,
+    //         b_value: b,
+    //     };
 
-        let proof = create_random_proof(circuit, &params, rng).expect("Expect the prover to work");
-        assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
-    }
+    //     let proof = create_random_proof(circuit, &params, rng).expect("Expect the prover to work");
+    //     assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
+    // }
 
 }
