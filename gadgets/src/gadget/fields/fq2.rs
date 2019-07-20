@@ -391,13 +391,13 @@ mod tests {
     extern crate bellman_ce;
  
     use std::marker::PhantomData;
-    use rand::{Rand, thread_rng};
+    // use rand::{Rand, thread_rng};
     use super::{Fq2};
     use crate::fields::{Fp2, Fp2Parameters};
 
     use bellman_ce::pairing::{Engine};
-    use bellman_ce::pairing::ff::{Field};
-    use bellman_ce::pairing::mnt4_753::{Mnt4, Fr};
+    // use bellman_ce::pairing::ff::{Field};
+    // use bellman_ce::pairing::mnt4_753::{Mnt4, Fr};
 
     use bellman_ce::{
         ConstraintSystem,
