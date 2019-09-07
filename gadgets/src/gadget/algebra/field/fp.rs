@@ -1,27 +1,31 @@
-use bellman_ce::pairing::{
-    Engine
-};
-
 use bellman_ce::{
-    // SynthesisError, 
-    // Variable
+    pairing::{
+        Engine,
+        ff::{
+            ScalarEngine,
+            Field as AlgebraField,
+        },
+    },
     ConstraintSystem, 
     LinearCombination, 
 };
 
-use bellman_ce::pairing::ff::{
-    Field
+use super::{
+    field::Field,
+    super::super::{
+        Gadget
+    }
 };
 
-pub struct Fq<E: Engine> {
+pub struct Fp<E: Engine> {
     pub value:     E::Fr,
     pub lc:  LinearCombination<E>
 }
 
-impl<E: Engine> Fq<E> {
+impl<E: Engine> Fp<E> {
 
     pub fn new(
-        value:     E::Fr,
+        value:     <E as ScalarEngine>::Fr,
         lc:  &LinearCombination<E>,
     ) -> Self {
 
@@ -31,9 +35,17 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    pub fn alloc<CS>(
+}
+
+impl <E: Engine> Gadget<E,  <E as ScalarEngine>::Fr> for Fp<E> {
+
+    fn value(&self) -> <E as ScalarEngine>::Fr {
+        self.value
+    }
+
+    fn alloc<CS>(
         cs:     &mut CS,
-        value:     E::Fr,
+        value:  E::Fr,
     ) -> Self 
         where CS: ConstraintSystem<E>
     {
@@ -49,28 +61,10 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    pub fn zero<CS>() -> Self
-        where CS: ConstraintSystem<E>
-    {
-        Self {
-            value: E::Fr::zero(),
-            lc: LinearCombination::<E>::zero()
-        }
-    }
-
-    pub fn one<CS>() -> Self
-        where CS: ConstraintSystem<E>
-    {
-        Self {
-            value: E::Fr::zero(),
-            lc: LinearCombination::<E>::zero() + CS::one()
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn alloc_input<CS>(
+    
+    fn alloc_input<CS>(
         cs:     &mut CS,
-        value:     E::Fr,
+        value:  E::Fr,
     ) -> Self
         where CS: ConstraintSystem<E>
     {
@@ -84,8 +78,30 @@ impl<E: Engine> Fq<E> {
             lc: LinearCombination::<E>::zero() + var,
         }
     }
+}
 
-    pub fn add(
+impl<E: Engine> Field<E, <E as ScalarEngine>::Fr> for Fp<E> 
+{
+
+    fn zero<CS>(_: &mut CS) -> Self
+        where CS: ConstraintSystem<E>
+    {
+        Self {
+            value: E::Fr::zero(),
+            lc: LinearCombination::<E>::zero()
+        }
+    }
+
+    fn one<CS>(_: &mut CS) -> Self
+        where CS: ConstraintSystem<E>
+    {
+        Self {
+            value: E::Fr::zero(),
+            lc: LinearCombination::<E>::zero() + CS::one()
+        }
+    }
+
+    fn add(
         &self,
         other:  &Self,
     ) -> Self {
@@ -100,7 +116,7 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    pub fn sub(
+    fn sub(
         &self,
         other: &Self,
     ) -> Self {
@@ -115,7 +131,7 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    pub fn negate(
+    fn negate(
        &self, 
     ) -> Self {
 
@@ -129,33 +145,25 @@ impl<E: Engine> Fq<E> {
         }
     }
 
-    pub fn mul_by_constant(
+    fn mul_by_constant(
         &self,
-        coeff:  E::Fr,
+        coeff:  &<E as ScalarEngine>::Fr,
     ) -> Self {
         
-        Fq{
+        Self {
             value: {
                 let mut output = self.value;
                 output.mul_assign(&coeff);
                 output
             },
-            lc: LinearCombination::<E>::zero() + (coeff, &self.lc)
+            lc: LinearCombination::<E>::zero() + (*coeff, &self.lc)
         }
     }
 
-    pub fn double(
+    fn mul<CS>(
         &self,
-    ) -> Self {
-        let mut two = E::Fr::one();
-        two.double();
-        self.mul_by_constant(two)
-    }
-
-    pub fn mul<CS>(
-        &self,
-        cs:    &mut CS,
         other: &Self, 
+        cs:    &mut CS,
     ) -> Self 
         where CS: ConstraintSystem<E>
     {
@@ -189,8 +197,8 @@ impl<E: Engine> Fq<E> {
         output
     }
 
-    #[allow(dead_code)]
-    pub fn inverse<CS>(
+    
+    fn inverse<CS>(
         &self,
         cs:    &mut CS
     ) -> Option<Self> 
@@ -211,7 +219,7 @@ impl<E: Engine> Fq<E> {
 
         let inverse_lc = LinearCombination::<E>::zero() + inverse_var;
         
-        let inverse = Fq{
+        let inverse = Self {
             value:     inv_value,
             lc:  inverse_lc,
         };
@@ -226,8 +234,8 @@ impl<E: Engine> Fq<E> {
         Some(inverse)
     }
 
-    #[allow(dead_code)]
-    pub fn square<CS>(
+    
+    fn square<CS>(
         &self,
         cs:    &mut CS,
     ) -> Self 
@@ -244,7 +252,7 @@ impl<E: Engine> Fq<E> {
 
         let sqr_lc = LinearCombination::<E>::zero() + sqr_var;
         
-        let square = Fq{
+        let square = Self {
             value:     sqr_value,
             lc:  sqr_lc,
         };
@@ -259,35 +267,41 @@ impl<E: Engine> Fq<E> {
         square
     }
 
-    #[allow(dead_code)]
-    pub fn enforce_mul<CS>(
+    
+    fn enforce_mul<CS>(
         &self,
-        cs:     &mut CS,
         other:  &Self, 
         result: &Self,
-    )
+        cs:     &mut CS,
+    ) -> Option<()>
         where CS: ConstraintSystem<E>
     {
+        // TODO: explicitly check the constraints at building time
         cs.enforce(|| "Multiplication constraint", 
             |lc| lc + &self.lc, 
             |lc| lc + &other.lc, 
             |lc| lc + &result.lc
         );
+
+        Some(())
     }
 
-    #[allow(dead_code)]
-    pub fn enforce_sqr<CS>(
+    
+    fn enforce_square<CS>(
         &self,
-        cs:     &mut CS,
         result: &Self,
-    )
+        cs:     &mut CS,
+    ) -> Option<()>
         where CS: ConstraintSystem<E>
     {
-        cs.enforce(|| "Multiplication constraint", 
+        // TODO: explicitly check the constraints at building time
+        cs.enforce(|| "Squaring constraint", 
             |lc| lc + &self.lc, 
             |lc| lc + &self.lc, 
             |lc| lc + &result.lc
         );
+
+        Some(())
     }
 }
 
@@ -310,10 +324,11 @@ mod tests {
     };
 
     // We're going to use the Groth16 proving system.
+    #[cfg(test)]
     use bellman_ce::groth16::{ 
         generate_random_parameters, 
         prepare_verifying_key, 
-        create_random_proof, 
+        create_random_proof,
         verify_proof
     };
 
@@ -356,11 +371,52 @@ mod tests {
 
     #[test]
     fn test_mnt4() {
-        use bellman_ce::pairing::mnt4_753::{ Mnt4, Fr };
+        use bellman_ce::pairing::mnt4_753::{ Fr };
+        use bellman_ce::pairing::mnt4_753::Mnt4 as engine;
+        // use bellman_ce::pairing::bls12_381::{ Fr };
+        // use bellman_ce::pairing::bls12_381::Bls12 as engine;
+
+        let rng = &mut thread_rng();
+
+        println!("Generating parameters");
+
+        let params = {
+            let c = TestCircuit::<engine> {
+                a_value: Fr::one(),
+                b_value: Fr::one(), // b cannot be zero
+            };
+
+            generate_random_parameters(c, rng).unwrap()
+        };
+
+        println!("Generated parameters");
+
+        // Prepare the verification key (for proof verification)
+        let pvk = prepare_verifying_key(&params.vk);
+
+        println!("Prepared the vk");
+
+        let a = Fr::rand(rng);
+        let b = Fr::rand(rng);
+
+        let circuit = TestCircuit::<engine> {
+            a_value: a,
+            b_value: b,
+        };
+
+        println!("Creating the proof");
+
+        let proof = create_random_proof(circuit, &params, rng).expect("Expect the prover to work");
+        assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
+    }
+
+    #[test]
+    fn test_mnt6() {
+        use bellman_ce::pairing::mnt6_753::{ Mnt6, Fr };
         let rng = &mut thread_rng();
 
         let params = {
-            let c = TestCircuit::<Mnt4> {
+            let c = TestCircuit::<Mnt6> {
                 a_value: Fr::one(),
                 b_value: Fr::one(), // b cannot be zero
             };
@@ -374,7 +430,7 @@ mod tests {
         let a = Fr::rand(rng);
         let b = Fr::rand(rng);
 
-        let circuit = TestCircuit::<Mnt4> {
+        let circuit = TestCircuit::<Mnt6> {
             a_value: a,
             b_value: b,
         };
@@ -382,34 +438,5 @@ mod tests {
         let proof = create_random_proof(circuit, &params, rng).expect("Expect the prover to work");
         assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
     }
-
-    // #[test]
-    // fn test_mnt6() {
-    //     use bellman_ce::pairing::mnt6_753::{ Mnt6, Fr };
-    //     let rng = &mut thread_rng();
-
-    //     let params = {
-    //         let c = TestCircuit::<Mnt6> {
-    //             a_value: Fr::one(),
-    //             b_value: Fr::one(), // b cannot be zero
-    //         };
-
-    //         generate_random_parameters(c, rng).unwrap()
-    //     };
-
-    //     // Prepare the verification key (for proof verification)
-    //     let pvk = prepare_verifying_key(&params.vk);
-
-    //     let a = Fr::rand(rng);
-    //     let b = Fr::rand(rng);
-
-    //     let circuit = TestCircuit::<Mnt6> {
-    //         a_value: a,
-    //         b_value: b,
-    //     };
-
-    //     let proof = create_random_proof(circuit, &params, rng).expect("Expect the prover to work");
-    //     assert!(verify_proof(&pvk, &proof, &[a, b]).expect("Expect well formed verification key"));
-    // }
 
 }

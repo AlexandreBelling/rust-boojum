@@ -1,4 +1,5 @@
+#![allow(dead_code, unused_imports)]
 pub mod gadget;
-pub mod fields;
 
 extern crate bellman_ce;
+
